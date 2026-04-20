@@ -1,0 +1,426 @@
+scalar Time
+
+# ─────────────────────────────────────────
+# Enums
+# ─────────────────────────────────────────
+
+enum UserRole { customer artist admin }
+enum ProductStatus { draft active archived }
+enum OrderStatus { pending paid processing shipped delivered cancelled refunded }
+enum CartStatus { active checked_out abandoned }
+enum ShipmentStatus { pending in_transit out_for_delivery delivered failed }
+enum DiscountType { percentage fixed }
+enum NotificationType { order_update shipment promotion system post_vote new_follower }
+enum PostVisibility { public private }
+enum SortOrder { popular newest price_asc price_desc rating }
+
+# ─────────────────────────────────────────
+# User Domain
+# ─────────────────────────────────────────
+
+type User {
+  id: ID!
+  email: String!
+  phone: String
+  fullName: String
+  avatarUrl: String
+  role: UserRole!
+  isActive: Boolean!
+  createdAt: Time!
+  updatedAt: Time
+  profile: UserProfile
+  addresses: [UserAddress!]
+  paymentMethods: [PaymentMethod!]
+}
+
+type UserProfile {
+  id: ID!
+  bio: String
+  preferredLanguage: String!
+  pdpaConsent: Boolean!
+  pdpaVersion: String
+}
+
+type UserAddress {
+  id: ID!
+  label: String
+  recipientName: String!
+  phone: String!
+  addressLine1: String!
+  addressLine2: String
+  subdistrict: String
+  district: String
+  province: String
+  postalCode: String
+  isDefault: Boolean!
+}
+
+type PaymentMethod {
+  id: ID!
+  type: String!
+  label: String!
+  lastFour: String
+  brand: String
+  isDefault: Boolean!
+}
+
+# ─────────────────────────────────────────
+# Product Domain
+# ─────────────────────────────────────────
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String
+  iconUrl: String
+  isActive: Boolean!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  basePrice: Float!
+  stockQty: Int!
+  status: ProductStatus!
+  isFeatured: Boolean!
+  avgRating: Float!
+  reviewCount: Int!
+  category: Category!
+  images: [ProductImage!]
+  variants: [ProductVariant!]
+  createdAt: Time!
+}
+
+type ProductImage {
+  id: ID!
+  imageUrl: String!
+  isPrimary: Boolean!
+}
+
+type ProductVariant {
+  id: ID!
+  sku: String
+  size: String
+  color: String
+  material: String
+  priceModifier: Float!
+  stockQty: Int!
+}
+
+type ProductReview {
+  id: ID!
+  product: Product!
+  user: User!
+  rating: Int!
+  body: String
+  createdAt: Time!
+}
+
+# ─────────────────────────────────────────
+# Cart Domain
+# ─────────────────────────────────────────
+
+type Cart {
+  id: ID!
+  status: CartStatus!
+  items: [CartItem!]!
+  subtotal: Float!
+  updatedAt: Time!
+}
+
+type CartItem {
+  id: ID!
+  quantity: Int!
+  unitPrice: Float!
+  product: Product!
+}
+
+# ─────────────────────────────────────────
+# Order Domain
+# ─────────────────────────────────────────
+
+type Order {
+  id: ID!
+  orderNumber: String!
+  status: OrderStatus!
+  subtotal: Float!
+  discountAmount: Float!
+  shippingFee: Float!
+  total: Float!
+  promotionCode: String
+  shippingMethod: ShippingMethod
+  shipment: Shipment
+  createdAt: Time!
+  items: [OrderItem!]!
+}
+
+type OrderItem {
+  id: ID!
+  quantity: Int!
+  unitPrice: Float!
+  product: Product!
+}
+
+# ─────────────────────────────────────────
+# Shipping Domain
+# ─────────────────────────────────────────
+
+type ShippingMethod {
+  id: ID!
+  name: String!
+  description: String
+  carrier: String!
+  estimatedDaysMin: Int!
+  estimatedDaysMax: Int!
+  baseFee: Float!
+}
+
+type Shipment {
+  id: ID!
+  status: ShipmentStatus!
+  trackingNumber: String
+  carrier: String
+  estimatedDelivery: Time
+  shippedAt: Time
+  deliveredAt: Time
+}
+
+# ─────────────────────────────────────────
+# Promotions
+# ─────────────────────────────────────────
+
+type Promotion {
+  id: ID!
+  code: String!
+  description: String
+  discountType: DiscountType!
+  discountValue: Float!
+  minOrderAmount: Float!
+  expiresAt: Time
+}
+
+type PromoCheckResult {
+  valid: Boolean!
+  message: String!
+  discountAmount: Float!
+  promotion: Promotion
+}
+
+# ─────────────────────────────────────────
+# Notifications
+# ─────────────────────────────────────────
+
+type Notification {
+  id: ID!
+  type: NotificationType!
+  title: String!
+  body: String!
+  isRead: Boolean!
+  createdAt: Time!
+}
+
+type NotificationPage {
+  items: [Notification!]!
+  unreadCount: Int!
+}
+
+# ─────────────────────────────────────────
+# Search
+# ─────────────────────────────────────────
+
+type SearchResult {
+  products: [Product!]!
+  total: Int!
+}
+
+# ─────────────────────────────────────────
+# Feed Domain
+# ─────────────────────────────────────────
+
+type Post {
+  id: ID!
+  user: User!
+  caption: String
+  imageUrl: String!
+  isStickerDesign: Boolean!
+  visibility: PostVisibility!
+  likeCount: Int!
+  commentCount: Int!
+  voteCount: Int!
+  isLikedByMe: Boolean!
+  isVotedByMe: Boolean!
+  category: Category
+  comments(limit: Int, offset: Int): [PostComment!]!
+  createdAt: Time!
+}
+
+type PostComment {
+  id: ID!
+  post: Post!
+  user: User!
+  body: String!
+  createdAt: Time!
+}
+
+# ─────────────────────────────────────────
+# Queries
+# ─────────────────────────────────────────
+
+type Query {
+  # User
+  me: User
+  user(id: ID!): User
+
+  # Product
+  products(limit: Int, offset: Int, categoryId: ID, minPrice: Float, maxPrice: Float, isFeatured: Boolean, sort: SortOrder): [Product!]!
+  product(id: ID!): Product
+  categories: [Category!]!
+  productReviews(productId: ID!, limit: Int, offset: Int): [ProductReview!]!
+
+  # Search
+  searchProducts(query: String!, limit: Int, offset: Int): SearchResult!
+  mySearchHistory: [String!]!
+
+  # Cart
+  myCart: Cart
+
+  # Orders
+  myOrders: [Order!]!
+  order(id: ID!): Order
+
+  # Shipping
+  shippingMethods: [ShippingMethod!]!
+
+  # Promotions
+  checkPromoCode(code: String!, orderTotal: Float!): PromoCheckResult!
+
+  # Notifications
+  myNotifications(limit: Int, offset: Int): NotificationPage!
+
+  # Feed
+  feed(limit: Int, offset: Int): [Post!]!
+  post(id: ID!): Post
+  userPosts(userId: ID!, limit: Int, offset: Int): [Post!]!
+  stickerDesigns(limit: Int, offset: Int): [Post!]!
+  showcase(limit: Int, offset: Int): [Post!]!
+}
+
+# ─────────────────────────────────────────
+# Mutations
+# ─────────────────────────────────────────
+
+type Mutation {
+  # Auth
+  register(email: String!, password: String!, name: String!): User!
+  login(email: String!, password: String!): String!
+
+  # Profile
+  updateProfile(input: UpdateProfileInput!): User!
+  acceptPDPA(version: String!): User!
+
+  # Address
+  addAddress(input: AddAddressInput!): UserAddress!
+  updateAddress(id: ID!, input: AddAddressInput!): UserAddress!
+  removeAddress(id: ID!): Boolean!
+  setDefaultAddress(id: ID!): UserAddress!
+
+  # Payment Methods
+  addPaymentMethod(input: AddPaymentMethodInput!): PaymentMethod!
+  removePaymentMethod(id: ID!): Boolean!
+  setDefaultPaymentMethod(id: ID!): PaymentMethod!
+
+  # Product (Admin/Artist)
+  createProduct(input: CreateProductInput!): Product!
+
+  # Reviews
+  addReview(input: AddReviewInput!): ProductReview!
+  deleteReview(id: ID!): Boolean!
+
+  # Cart
+  addToCart(productId: ID!, quantity: Int!): Cart!
+  updateCartItem(cartItemId: ID!, quantity: Int!): Cart!
+  removeFromCart(cartItemId: ID!): Cart!
+
+  # Order
+  createOrder(input: CreateOrderInput!): Order!
+
+  # Notifications
+  markNotificationRead(id: ID!): Notification!
+  markAllNotificationsRead: Boolean!
+
+  # Search
+  clearSearchHistory: Boolean!
+
+  # Feed
+  createPost(input: CreatePostInput!): Post!
+  deletePost(id: ID!): Boolean!
+  likePost(postId: ID!): Post!
+  unlikePost(postId: ID!): Post!
+  votePost(postId: ID!): Post!
+  unvotePost(postId: ID!): Post!
+  addComment(postId: ID!, body: String!): PostComment!
+  deleteComment(commentId: ID!): Boolean!
+}
+
+# ─────────────────────────────────────────
+# Input Types
+# ─────────────────────────────────────────
+
+input CreateProductInput {
+  name: String!
+  description: String
+  basePrice: Float!
+  stockQty: Int!
+  categoryId: ID!
+}
+
+input CreatePostInput {
+  caption: String
+  imageUrl: String!
+  isStickerDesign: Boolean
+  visibility: PostVisibility
+  categoryId: ID
+}
+
+input UpdateProfileInput {
+  fullName: String
+  phone: String
+  bio: String
+  avatarUrl: String
+  preferredLanguage: String
+}
+
+input AddAddressInput {
+  label: String
+  recipientName: String!
+  phone: String!
+  addressLine1: String!
+  addressLine2: String
+  subdistrict: String
+  district: String
+  province: String
+  postalCode: String
+  isDefault: Boolean
+}
+
+input AddPaymentMethodInput {
+  type: String!
+  label: String
+  lastFour: String
+  brand: String
+  token: String
+}
+
+input AddReviewInput {
+  productId: ID!
+  rating: Int!
+  body: String
+  orderId: ID
+}
+
+input CreateOrderInput {
+  addressId: ID!
+  shippingMethodId: ID
+  promotionCode: String
+}

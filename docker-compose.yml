@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: minimule
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: minimule
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minimule"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ENV: development
+      PORT: 8080
+      DATABASE_URL: postgres://minimule:password@postgres:5432/minimule?sslmode=disable
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: local-dev-secret-change-in-production
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 168h
+      GRAPHQL_PLAYGROUND: "true"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:8081,exp://localhost:8081"
+      RATE_LIMIT_REQUESTS: "200"
+      RATE_LIMIT_WINDOW: 1m
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount schema so playground always has latest (dev only)
+      - ./graph/schema:/app/graph/schema:ro
+    profiles: ["full"]
+
+volumes:
+  postgres_data:
+  redis_data:

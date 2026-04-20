@@ -1,0 +1,8 @@
+bin/
+*.out
+*.coverprofile
+coverage.html
+.env
+.git
+k8s/
+*.md
