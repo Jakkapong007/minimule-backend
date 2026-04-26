@@ -7,17 +7,24 @@ import (
 
 // CORS sets permissive-but-origin-checked CORS headers.
 // Pass nil/empty allowedOrigins to block all cross-origin requests.
+// Include "*" in allowedOrigins to allow any origin (useful for development).
 func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
+	wildcard := false
 	originSet := make(map[string]struct{}, len(allowedOrigins))
 	for _, o := range allowedOrigins {
-		originSet[strings.TrimRight(o, "/")] = struct{}{}
+		if o == "*" {
+			wildcard = true
+		} else {
+			originSet[strings.TrimRight(o, "/")] = struct{}{}
+		}
 	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 			if origin != "" {
-				if _, ok := originSet[origin]; ok {
+				_, known := originSet[origin]
+				if wildcard || known {
 					w.Header().Set("Access-Control-Allow-Origin", origin)
 					w.Header().Set("Access-Control-Allow-Credentials", "true")
 					w.Header().Set("Vary", "Origin")
