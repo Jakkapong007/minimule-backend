@@ -48,20 +48,32 @@ func (q *Queries) GetCartItems(ctx context.Context, cartID string) ([]*model.Car
 }
 
 func (q *Queries) UpsertCartItem(ctx context.Context, cartID, productID string, variantID *string, quantity int, unitPrice float64) (*model.CartItem, error) {
-	row := q.pool.QueryRow(ctx, `
+	// Check for existing item first (avoids pgx type-inference issues with functional ON CONFLICT).
+	var existingID string
+	var matchSQL string
+	var matchArgs []any
+	if variantID == nil {
+		matchSQL = `SELECT id FROM cart_items WHERE cart_id=$1 AND product_id=$2 AND variant_id IS NULL LIMIT 1`
+		matchArgs = []any{cartID, productID}
+	} else {
+		matchSQL = `SELECT id FROM cart_items WHERE cart_id=$1 AND product_id=$2 AND variant_id=$3 LIMIT 1`
+		matchArgs = []any{cartID, productID, *variantID}
+	}
+	_ = q.pool.QueryRow(ctx, matchSQL, matchArgs...).Scan(&existingID)
+
+	var ci model.CartItem
+	if existingID != "" {
+		err := q.pool.QueryRow(ctx, `
+			UPDATE cart_items SET quantity=quantity+$1, unit_price=$2 WHERE id=$3
+			RETURNING id, cart_id, product_id, variant_id, quantity, unit_price
+		`, quantity, unitPrice, existingID).Scan(&ci.ID, &ci.CartID, &ci.ProductID, &ci.VariantID, &ci.Quantity, &ci.UnitPrice)
+		return &ci, err
+	}
+	err := q.pool.QueryRow(ctx, `
 		INSERT INTO cart_items (cart_id, product_id, variant_id, quantity, unit_price)
 		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (cart_id, product_id, COALESCE(variant_id, ''))
-		DO UPDATE SET
-			quantity   = cart_items.quantity + EXCLUDED.quantity,
-			unit_price = EXCLUDED.unit_price
 		RETURNING id, cart_id, product_id, variant_id, quantity, unit_price
-	`, cartID, productID, variantID, quantity, unitPrice)
-	var ci model.CartItem
-	err := row.Scan(&ci.ID, &ci.CartID, &ci.ProductID, &ci.VariantID, &ci.Quantity, &ci.UnitPrice)
-	if isNotFound(err) {
-		return nil, ErrNotFound
-	}
+	`, cartID, productID, variantID, quantity, unitPrice).Scan(&ci.ID, &ci.CartID, &ci.ProductID, &ci.VariantID, &ci.Quantity, &ci.UnitPrice)
 	return &ci, err
 }
 

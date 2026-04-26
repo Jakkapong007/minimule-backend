@@ -3,13 +3,13 @@
 
 -- All passwords are: password123
 -- bcrypt hash for "password123" at cost 12
--- $2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RuK9gKFq6
+-- $2a$12$in8Zfto0NC08l5qgmtHhfe3R033O6bFx1nXkGg7gaZ2JOcjRBfUtu
 
 -- ── Users ─────────────────────────────────────────────────────────────────────
 INSERT INTO users (id, email, password_hash, phone, full_name, avatar_url, role, is_active) VALUES
-  ('00000000-0000-0000-0000-000000000001', 'admin@minimule.com',    '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RuK9gKFq6', '0800000001', 'Admin User',      NULL,                                     'admin',    TRUE),
-  ('00000000-0000-0000-0000-000000000002', 'artist@minimule.com',   '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RuK9gKFq6', '0800000002', 'Nong Artist',     'https://picsum.photos/seed/artist/200', 'artist',   TRUE),
-  ('00000000-0000-0000-0000-000000000003', 'customer@minimule.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RuK9gKFq6', '0800000003', 'Somchai Customer','https://picsum.photos/seed/user/200',   'customer', TRUE);
+  ('00000000-0000-0000-0000-000000000001', 'admin@minimule.com',    '$2a$12$in8Zfto0NC08l5qgmtHhfe3R033O6bFx1nXkGg7gaZ2JOcjRBfUtu', '0800000001', 'Admin User',      NULL,                                     'admin',    TRUE),
+  ('00000000-0000-0000-0000-000000000002', 'artist@minimule.com',   '$2a$12$in8Zfto0NC08l5qgmtHhfe3R033O6bFx1nXkGg7gaZ2JOcjRBfUtu', '0800000002', 'Nong Artist',     'https://picsum.photos/seed/artist/200', 'artist',   TRUE),
+  ('00000000-0000-0000-0000-000000000003', 'customer@minimule.com', '$2a$12$in8Zfto0NC08l5qgmtHhfe3R033O6bFx1nXkGg7gaZ2JOcjRBfUtu', '0800000003', 'Somchai Customer','https://picsum.photos/seed/user/200',   'customer', TRUE);
 
 -- ── User Profiles ─────────────────────────────────────────────────────────────
 INSERT INTO user_profiles (id, user_id, bio, preferred_language) VALUES
