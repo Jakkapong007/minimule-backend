@@ -1,6 +1,6 @@
 # miniMule Backend
 
-GraphQL API backend for **miniMule** — a Thai art & craft marketplace where independent artists sell sticker designs, custom artwork, and handmade goods. Built for a React Native mobile app.
+GraphQL API backend for **miniMule** — an art & craft marketplace where independent artists sell sticker designs, custom artwork, and handmade goods. Built for a React Native mobile app.
 
 ## Tech Stack
 
